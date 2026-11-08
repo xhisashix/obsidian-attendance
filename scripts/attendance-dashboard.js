@@ -148,6 +148,7 @@ try {
     }
 
     let dayMins = 0;
+    const dayCatTotals = {}; // { [jobCode__category]: { jobCode, category, mins, count } }
     for (let i = 1; i < rawLogs.length; i++) {
       const prev = rawLogs[i - 1];
       const current = rawLogs[i];
@@ -170,13 +171,20 @@ try {
         // JOB別加算
         jobTotals[jobCode] = (jobTotals[jobCode] || 0) + duration;
 
-        // JOB × カテゴリ別加算
+        // JOB × カテゴリ別加算（月次）
         const key = `${jobCode}__${category}`;
         if (!catTotals[key]) {
           catTotals[key] = { jobCode, category, mins: 0, count: 0 };
         }
         catTotals[key].mins += duration;
         catTotals[key].count += 1;
+
+        // JOB × カテゴリ別加算（日次）
+        if (!dayCatTotals[key]) {
+          dayCatTotals[key] = { jobCode, category, mins: 0, count: 0 };
+        }
+        dayCatTotals[key].mins += duration;
+        dayCatTotals[key].count += 1;
       } else if (!current.text.startsWith("[終了]")) {
         errorNotes.push(`[[${file.basename}]] (記法エラー: \`${current.text}\`)`);
       }
@@ -184,9 +192,18 @@ try {
 
     if (dayMins > 0) {
       workedDays++;
+      const breakdown = Object.values(dayCatTotals)
+        .sort((a, b) => a.jobCode.localeCompare(b.jobCode) || b.mins - a.mins)
+        .map(
+          (item) =>
+            `\`${item.jobCode}\` [${item.category}] **${formatHours(item.mins)}** (${formatHM(item.mins)})`,
+        )
+        .join("<br>");
+
       dailySummaries.push({
         fileLink: `[[${file.basename}]]`,
         mins: dayMins,
+        breakdown,
         lastTime: rawLogs[rawLogs.length - 1].time,
       });
     }
@@ -255,10 +272,11 @@ try {
   // --- 7. 日別稼働一覧（折りたたみ） ---
   dv.header(3, "📅 日別ログ一覧");
   dv.table(
-    ["日付", "稼働時間", "最終記録時刻"],
+    ["日付", "稼働時間", "JOB × カテゴリ別 内訳", "最終記録時刻"],
     dailySummaries.map((d) => [
       d.fileLink,
       `${formatHours(d.mins)} (${formatHM(d.mins)})`,
+      d.breakdown,
       d.lastTime,
     ]),
   );
