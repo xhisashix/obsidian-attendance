@@ -15,6 +15,17 @@ const formatHM = (mins) => {
   return h > 0 ? `${h}時間${m > 0 ? m + "分" : ""}` : `${m}分`;
 };
 
+// JOBマスタ（ノート）から表示名を取得してマップ化（テンプレート配下は除外）
+const jobMasterMap = {};
+for (const file of app.vault.getMarkdownFiles()) {
+  if (/(^|\/)templates\//i.test(file.path)) continue;
+  const fm = app.metadataCache.getFileCache(file)?.frontmatter;
+  if (fm && fm.job_code) {
+    jobMasterMap[String(fm.job_code)] =
+      fm.job_label || `${fm.job_code}: ${file.basename}`;
+  }
+}
+
 const logRegex = /^-\s*(\d{1,2}:\d{2})\s+(.+)$/;
 const rawLogs = [];
 
@@ -112,7 +123,7 @@ if (Object.keys(catTotals).length > 0) {
       const dayRatio =
         totalDayMins > 0 ? ((item.mins / totalDayMins) * 100).toFixed(1) : "0.0";
       return [
-        item.jobCode,
+        jobMasterMap[item.jobCode] || item.jobCode,
         item.category,
         `**${formatHours(item.mins)}** (${formatHM(item.mins)})`,
         `${item.count} 回`,
@@ -122,7 +133,7 @@ if (Object.keys(catTotals).length > 0) {
     });
 
   dv.table(
-    ["JOBコード", "カテゴリ", "合計時間", "タスク数", "JOB内比率", "日内比率"],
+    ["JOB", "カテゴリ", "合計時間", "タスク数", "JOB内比率", "日内比率"],
     catRows,
   );
 }

@@ -194,10 +194,10 @@ try {
       workedDays++;
       const breakdown = Object.values(dayCatTotals)
         .sort((a, b) => a.jobCode.localeCompare(b.jobCode) || b.mins - a.mins)
-        .map(
-          (item) =>
-            `\`${item.jobCode}\` [${item.category}] **${formatHours(item.mins)}** (${formatHM(item.mins)})`,
-        )
+        .map((item) => {
+          const jobName = jobMasterMap[item.jobCode] || item.jobCode;
+          return `${jobName} [${item.category}] **${formatHours(item.mins)}** (${formatHM(item.mins)})`;
+        })
         .join("<br>");
 
       dailySummaries.push({
@@ -256,7 +256,7 @@ try {
       const jobTotal = jobTotals[item.jobCode] || 1;
       const inJobRatio = ((item.mins / jobTotal) * 100).toFixed(1);
       return [
-        item.jobCode,
+        jobMasterMap[item.jobCode] || item.jobCode,
         item.category,
         `**${formatHours(item.mins)}** (${formatHM(item.mins)})`,
         `${item.count} 回`,
@@ -265,7 +265,7 @@ try {
     });
 
   dv.table(
-    ["JOBコード", "カテゴリ", "合計時間", "タスク数", "JOB内比率"],
+    ["JOB", "カテゴリ", "合計時間", "タスク数", "JOB内比率"],
     catRows,
   );
 
