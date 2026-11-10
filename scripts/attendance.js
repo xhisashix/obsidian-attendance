@@ -112,7 +112,25 @@ dv.table(
   ]),
 );
 
-// 2. JOB × カテゴリ別 日次集計テーブル
+// 2. JOB別 合計時間テーブル
+if (Object.keys(jobTotals).length > 0) {
+  dv.header(4, "📁 JOB別 合計時間");
+  const jobRows = Object.entries(jobTotals)
+    .sort((a, b) => b[1] - a[1])
+    .map(([jobCode, mins]) => {
+      const dayRatio =
+        totalDayMins > 0 ? ((mins / totalDayMins) * 100).toFixed(1) : "0.0";
+      return [
+        jobMasterMap[jobCode] || jobCode,
+        `**${formatHours(mins)}** (${formatHM(mins)})`,
+        `${dayRatio}%`,
+      ];
+    });
+
+  dv.table(["JOB", "合計時間", "日内比率"], jobRows);
+}
+
+// 3. JOB × カテゴリ別 日次集計テーブル
 if (Object.keys(catTotals).length > 0) {
   dv.header(4, "🏷️ JOB × カテゴリ別 稼働内訳");
   const catRows = Object.values(catTotals)
